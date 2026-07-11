@@ -1,0 +1,55 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: redsteel-db
+    restart: unless-stopped
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+      MYSQL_DATABASE: redsteel
+      MYSQL_USER: redsteel_user
+      MYSQL_PASSWORD: OLD_CREDENTIAL_REPLACED
+      MYSQL_ROOT_PASSWORD: OLD_CREDENTIAL_REPLACED
+    volumes:
+      - redsteel_db:/var/lib/mysql
+    networks:
+      - redsteel
+
+  wordpress:
+    image: wordpress:latest
+    container_name: redsteel-wp
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      TZ: America/Argentina/Buenos_Aires
+      WORDPRESS_DB_HOST: redsteel-db:3306
+      WORDPRESS_DB_USER: redsteel_user
+      WORDPRESS_DB_PASSWORD: OLD_CREDENTIAL_REPLACED
+      WORDPRESS_DB_NAME: redsteel
+
+      WORDPRESS_CONFIG_EXTRA: |
+        define('FORCE_SSL_ADMIN', true);
+
+        // IMPORTANT: en docker-compose, $ se debe escapar como $$ para que NO lo reemplace compose
+        if (!empty($$_SERVER['HTTP_X_FORWARDED_PROTO']) && $$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+          $$_SERVER['HTTPS'] = 'on';
+        }
+
+    ports:
+      - "8088:80"
+    volumes:
+      - redsteel_wp:/var/www/html
+    networks:
+      - redsteel
+      - proxy_default
+
+volumes:
+  redsteel_db:
+  redsteel_wp:
+
+networks:
+  redsteel:
+    name: redsteel_default
+  proxy_default:
+    external: true
+    name: proxy_default
