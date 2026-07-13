@@ -9,6 +9,7 @@ volumes/
 
 # Backups
 *.bak
+backups/
 
 # IDE
 .vscode/
