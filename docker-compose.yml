@@ -3,6 +3,11 @@ services:
     image: mysql:8.0
     container_name: redsteel-db
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       TZ: America/Argentina/Buenos_Aires
       MYSQL_DATABASE: redsteel
@@ -19,13 +24,21 @@ services:
     container_name: redsteel-wp
     restart: unless-stopped
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     environment:
       TZ: America/Argentina/Buenos_Aires
       WORDPRESS_DB_HOST: redsteel-db:3306
       WORDPRESS_DB_USER: redsteel_user
       WORDPRESS_DB_PASSWORD: OLD_CREDENTIAL_REPLACED
       WORDPRESS_DB_NAME: redsteel
+      WP_HOME: https://redsteel.com.ar
+      WP_SITEURL: https://redsteel.com.ar
 
       WORDPRESS_CONFIG_EXTRA: |
         define('FORCE_SSL_ADMIN', true);
