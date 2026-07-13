@@ -44,11 +44,11 @@ services:
       WORDPRESS_DB_USER: ${WORDPRESS_DB_USER:-redsteel_user}
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-redsteel}
+      WORDPRESS_DEBUG: 0
       WP_HOME: ${WP_HOME:-https://redsteel.com.ar}
       WP_SITEURL: ${WP_SITEURL:-https://redsteel.com.ar}
 
       WORDPRESS_CONFIG_EXTRA: |
-        define('WP_DEBUG', false);
         define('WP_DEBUG_LOG', false);
         define('WP_DEBUG_DISPLAY', false);
         define('FORCE_SSL_ADMIN', true);
