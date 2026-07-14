@@ -45,6 +45,14 @@ services:
       WORDPRESS_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD}
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-redsteel}
       WORDPRESS_DEBUG: 0
+      WORDPRESS_AUTH_KEY: "kOkBohz$$A`qMRnt(jpQZ:#kHezX4d?.df|G7v-:YKhkdq,irC^|O_wim~lVen)!?"
+      WORDPRESS_SECURE_AUTH_KEY: "UX^5.WWa.|US+(a;A8Ws~:}|)b-m/?rLPR]aeQnp3u!vaL?0,JlfWc30.G;ss^WY"
+      WORDPRESS_LOGGED_IN_KEY: "!wk0?ktYK -qwxA+?vD`KsLW6orGla9s|1xDtfgsivwDn.T^#&=cxLB&;eT3{5FL"
+      WORDPRESS_NONCE_KEY: "2Y{q833dhJW]&e`{S3a_ce/ZQ-ZBg7c|rH<boGt}#b7St+Dx5G<TL<+?t8vLmOM_"
+      WORDPRESS_AUTH_SALT: "v/J.:J6*38O?z5knFuRN9;_LT%6GNbt@XOIR}F`o@X3x4+w^>L`k51WlcOWWG5wK"
+      WORDPRESS_SECURE_AUTH_SALT: "lK|+-^HR$$j# <zkL1-fY#F*RC7I_fMzwT-ZB,v7 v>!JW~[e2.w57;Dv-} 74Czd"
+      WORDPRESS_LOGGED_IN_SALT: "X%}RKRrm8J<sg-s0ua}|$$KOpu%1;Y@z`|Ub;pCU%wFSW)K-a-e8iwZBP-L^|~sW-"
+      WORDPRESS_NONCE_SALT: "seC}v334eD8XKo{!:.-6O&Lc43/p$$9Y1:5[/wPKO<et_!|[;4naA|+a-Lt4HFz9Y"
       WP_HOME: ${WP_HOME:-https://redsteel.com.ar}
       WP_SITEURL: ${WP_SITEURL:-https://redsteel.com.ar}
 
