@@ -1,101 +1,153 @@
 # Red Steel Landing — Agent Guide
 
-**Versión:** 3.0
-**Fecha:** 2026-07-16
-**Aplica a:** Todo agente de IA trabajando en la landing page.
+**Versión:** 4.0
+**Fecha:** 2026-07-17
 
 ---
 
-## Proyecto
+## 1. ¿Qué es el Landing?
 
-Landing page de Red Steel corriendo en WordPress + MySQL via Docker Compose.
-
-| Dato | Valor |
-|---|---|
-| Path local | `C:\PORTAL\redsteel` |
-| Path VPS | `/opt/redsteel` |
-| Puerto | 8088 (mapeado a 80 interno) |
-| URL | `https://redsteel.com.ar` |
-| Contenedores | `redsteel-wp` (wordpress:6.7), `redsteel-db` (mysql:8.0) |
-| Proxy | Nginx Proxy Manager en `proxy_default` network |
-| Repo | `https://github.com/Rippp6/redsteel-web.git` |
+Landing page de Red Steel. WordPress + MySQL corriendo en Docker Compose. No tiene build step — con `docker compose up -d` se aplican los cambios.
 
 ---
 
-## Infraestructura
+## 2. El VPS — cómo funciona
 
-- **Docker Compose**: `docker-compose.yml` define ambos servicios
-- **Red**: interna `redsteel_default` + externa `proxy_default` (NPM)
-- **Volúmenes**: `redsteel_db` (MySQL), `redsteel_wp` (WordPress files)
-- **Backups**: cron automático cada 24h en `/opt/redsteel/backups/`
-- **Healthchecks**: MySQL (mysqladmin ping), WordPress (curl localhost)
+```
+/opt/
+├── redsteel/         owner=redsteel:redsteel             permisos=2775   puerto=8088
+├── portal/           owner=portal:portal                 permisos=2775   puerto=3000
+├── mcp/              owner=mcp:mcp                       permisos=2775   puerto=3090
+├── estructurarte/    owner=estructurarte:estructurarte   permisos=2775   puerto=3001
+├── proxy/            owner=root:root                     permisos=755    NPM
+└── wa-api/           owner=root:root                     permisos=755    WhatsApp
+```
 
----
+**El MCP (usuario `mcp`) tiene acceso al grupo `redsteel` y `docker`.** Puede leer/escribir archivos en `/opt/redsteel/` y ejecutar comandos en los contenedores Docker.
 
-## Seguridad
-
-- `.gitignore` ignora `.env`, `.bak`, volúmenes Docker, archivos IDE
-- Las credenciales de DB están en `docker-compose.yml` (rotar periódicamente)
-- `FORCE_SSL_ADMIN` activado
-- `WP_HOME` y `WP_SITEURL` configurados en `https://redsteel.com.ar`
-- El formulario de leads público envía POST a `/api/leads/intake` del Portal
+**No usa PM2.** Los contenedores Docker se inician con `docker compose up -d` y se reinician solos (`restart: unless-stopped` en docker-compose.yml).
 
 ---
 
-## Herramientas MCP
+## 3. Infraestructura Docker
+
+| Contenedor | Imagen | Puerto interno | Descripción |
+|---|---|---|---|
+| `redsteel-wp` | `wordpress:6.7` | 80 | WordPress |
+| `redsteel-db` | `mysql:8.0` | 3306 | MySQL |
+
+- Red interna: `redsteel_default`
+- Red externa: `proxy_default` (conecta con Nginx Proxy Manager)
+- Volúmenes: `redsteel_db` (MySQL data), `redsteel_wp` (wp-content)
+- URL pública: `https://redsteel.com.ar`
+
+---
+
+## 4. Herramientas MCP
+
+### WordPress
 
 | Tool | Uso |
 |---|---|
-| `wp_config` | Ver wp-config.php desde el contenedor |
+| `wp_config` | Leer wp-config.php desde el contenedor |
 | `wp_plugins` | Listar plugins instalados |
 | `wp_theme` | Ver tema activo |
-| `wp_db_check` | Stats de la DB (tablas, users, posts, pages) |
-| `wp_db_query sql="SELECT ..."` | Queries SELECT/EXPLAIN en MySQL |
-| `docker_ps` | Estado de los contenedores |
-| `docker_logs container=redsteel-wp tail=50` | Logs de WordPress |
+| `wp_db_check` | Stats: tablas, users, posts, pages |
+| `wp_db_query sql="SELECT ..."` | Ejecutar SELECT en MySQL |
+
+### Docker
+
+| Tool | Uso |
+|---|---|
+| `docker_ps` | Ver todos los contenedores |
+| `docker_inspect container=redsteel-wp` | Detalles del contenedor |
+| `docker_logs container=redsteel-wp tail=100` | Logs de WordPress |
+| `docker_logs container=redsteel-db tail=50` | Logs de MySQL |
 | `docker_restart container=redsteel-wp confirm=true` | Reiniciar WordPress |
-| `docker_exec container=redsteel-wp command="..."` | Ejecutar comando en el container |
-| `vps_exec command="docker compose -f /opt/redsteel/docker-compose.yml up -d"` | Redeploy |
-| `vps_exec command="git -C /opt/redsteel pull"` | Pull en VPS |
-| `git_commit repo=redsteel_landing -m "..."` | Commit local |
-| `git_push repo=redsteel_landing` | Push a GitHub |
+| `docker_exec container=redsteel-wp command="wp plugin list"` | Ejecutar WP-CLI |
+
+### Archivos (root=redsteel_landing)
+
+`list_dir`, `read_file`, `tree`, `search_code`, `write_file`, `edit_file`, `delete_file`, `file_exists`, `file_info`
+
+### Git (repo=redsteel_landing)
+
+`git_status`, `git_diff`, `git_log`, `git_pull`, `git_push`, `git_commit`
+
+### VPS
+
+| Tool | Ejemplo |
+|---|---|
+| `vps_exec` | `vps_exec command="docker compose -f /opt/redsteel/docker-compose.yml up -d" scope=mcp` |
+| `vps_info` | Info del VPS |
+| `server_diskspace` | Espacio en disco |
 
 ---
 
-## Flujo de trabajo
-
-El agente trabaja **primero local** (`C:\PORTAL\redsteel\`) y después deploya al VPS con MCP:
+## 5. Flujo de trabajo
 
 ```
-1. Editar archivos localmente
-2. git_commit repo=redsteel_landing -m "fix: descripción"
-3. git_push repo=redsteel_landing
-4. vps_exec command="git -C /opt/redsteel pull" scope=mcp
-5. vps_exec command="docker compose -f /opt/redsteel/docker-compose.yml up -d" scope=mcp
-```
+# 1. Editar archivos
+read_file root=redsteel_landing file=docker-compose.yml
+edit_file root=redsteel_landing path=docker-compose.yml ...
 
-**Nota:** WordPress no tiene build step. Con `docker compose up -d` alcanza para aplicar cambios de configuración o plugins. Cambios de contenido se hacen desde el admin WP.
+# 2. No hay build — solo commit y deploy
+git_commit repo=redsteel_landing -m "fix: descripción"
+git_push repo=redsteel_landing
+
+# 3. Pull en VPS
+vps_exec command="git -C /opt/redsteel pull" scope=mcp
+
+# 4. Redeploy Docker
+vps_exec command="docker compose -f /opt/redsteel/docker-compose.yml up -d" scope=mcp
+
+# 5. Verificar
+docker_ps
+docker_logs container=redsteel-wp tail=20
+```
 
 ---
 
-## Operaciones comunes
+## 6. Operaciones comunes
 
 ```
-# Ver logs de WordPress
-docker_logs container=redsteel-wp tail=100
+# Ver estado
+docker_ps
+docker_logs container=redsteel-wp tail=50
 
-# Reiniciar después de cambiar wp-config
+# Reiniciar WordPress
 docker_restart container=redsteel-wp confirm=true
 
-# Consultar la DB
-wp_db_query sql="SELECT COUNT(*) FROM wp_posts WHERE post_status='publish'"
+# Consultar la DB de WordPress
+wp_db_query sql="SELECT post_title FROM wp_posts WHERE post_status='publish' LIMIT 10"
 
-# Ver estado de containers
+# Ver plugins activos
+wp_plugins
+
+# Backup manual de MySQL
+docker_exec container=redsteel-db command="mysqldump -u wordpress -pwordpress wordpress" > /tmp/wp_backup.sql
+
+# Ver espacio en disco
+server_diskspace
+```
+
+---
+
+## 7. Diagnóstico
+
+```
+# ¿Están corriendo los containers?
 docker_ps
 
-# Backup manual de la DB
-docker_exec container=redsteel-db command="mysqldump -u wordpress -p\$MYSQL_ROOT_PASSWORD wordpress > /backup.sql"
+# ¿Responde WordPress?
+vps_exec command="curl -s -o /dev/null -w '%{http_code}' http://localhost:8088" scope=mcp
 
-# Ver procesos del VPS
-vps_exec command="ps aux | grep docker" scope=mcp
+# Logs de error de WordPress
+docker_logs container=redsteel-wp tail=30
+
+# Logs de MySQL
+docker_logs container=redsteel-db tail=30
+
+# ¿Cuánto espacio queda?
+server_diskspace
 ```
