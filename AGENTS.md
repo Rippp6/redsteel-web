@@ -70,7 +70,21 @@ Landing page de Red Steel. WordPress + MySQL corriendo en Docker Compose. No tie
 
 `list_dir`, `read_file`, `tree`, `search_code`, `write_file`, `edit_file`, `delete_file`, `file_exists`, `file_info`
 
-### Git (repo=redsteel_landing)
+### PM2 & Diagnóstico (todos los servicios)
+
+| Tool | Uso |
+|---|---|
+| `mcp_health` | **Dashboard unificado.** PM2 status + puertos + errores + disco + memoria. Un solo llamado. |
+| `service_control action=status project=mcp` | Ver si el MCP está corriendo |
+| `service_control action=status project=portal` | Ver si el Portal está corriendo |
+| `service_control action=restart project=mcp confirm=true` | Reiniciar MCP si no responde |
+
+### Configuración
+
+| Tool | Uso |
+|---|---|
+| `project_config action=list project=redsteel_landing` | Listar archivos de configuración |
+| `project_config action=read project=redsteel_landing file=docker-compose.yml` | Leer docker-compose.yml |
 
 `git_status`, `git_diff`, `git_log`, `git_pull`, `git_push`, `git_commit`
 
@@ -136,18 +150,22 @@ server_diskspace
 ## 7. Diagnóstico
 
 ```
-# ¿Están corriendo los containers?
+# Dashboard (un solo llamado)
+mcp_health          # PM2 + puertos + errores + disco + memoria
+
+# ¿Está corriendo WordPress?
 docker_ps
-
-# ¿Responde WordPress?
-vps_exec command="curl -s -o /dev/null -w '%{http_code}' http://localhost:8088" scope=mcp
-
-# Logs de error de WordPress
 docker_logs container=redsteel-wp tail=30
+
+# ¿Responde?
+vps_exec command="curl -s -o /dev/null -w '%{http_code}' http://localhost:8088" scope=mcp
 
 # Logs de MySQL
 docker_logs container=redsteel-db tail=30
 
-# ¿Cuánto espacio queda?
+# ¿El MCP está vivo? (necesario para usar las tools)
+service_control action=status project=mcp
+
+# Espacio en disco
 server_diskspace
 ```
